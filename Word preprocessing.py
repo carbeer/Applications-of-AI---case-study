@@ -1,6 +1,8 @@
 import nltk
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.snowball import EnglishStemmer 
+from nltk.text import TextCollection
+from nltk.corpus import wordnet as wn
 
 #####################################
 ########  DEFINED FUNCTIONS  ########
@@ -17,6 +19,7 @@ def stemming(fileIn, fileOut):
             #    print('This is the original word: ' + word + ' and this the stemmed one: ' + stemmer.stem(word)) 
         fileOut.write("\n")             
 
+# TODO: Include tokenization into the lemmatization process --> Better results!
 # Lemmatization of the text according to WordNet's morphy function
 def lemmatize(fileIn, fileOut):
     lines = fileIn.readlines()
@@ -27,6 +30,40 @@ def lemmatize(fileIn, fileOut):
             # if (wn.lemmatize(word) != word):
             #    print('This is the original word: ' + word + ' and this the lemmatized one: ' + wn.lemmatize(word)) 
         fileOut.write("\n")
+
+
+# Returns tagges words
+def tag(fileIn):
+    return pos_tag(nltk.word_tokenize(fileIn.read()))
+
+####################################
+#######  EXTERNAL FUNCTIONS  #######
+####################################
+
+# Shall be used to enhance the lemmatization process
+# Copied from stackoverflow: https://stackoverflow.com/questions/25534214/nltk-wordnet-lemmatizer-shouldnt-it-lemmatize-all-inflections-of-a-word
+def is_noun(tag):
+    return tag in ['NN', 'NNS', 'NNP', 'NNPS']
+
+def is_verb(tag):
+    return tag in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
+
+def is_adverb(tag):
+    return tag in ['RB', 'RBR', 'RBS']
+
+def is_adjective(tag):
+    return tag in ['JJ', 'JJR', 'JJS']
+
+def penn_to_wn(tag):
+    if is_adjective(tag):
+        return wn.ADJ
+    elif is_noun(tag):
+        return wn.NOUN
+    elif is_adverb(tag):
+        return wn.ADV
+    elif is_verb(tag):
+        return wn.VERB
+    return None
             
 #####################################
 ########      EXECUTION      ########
