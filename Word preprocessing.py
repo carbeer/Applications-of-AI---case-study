@@ -3,6 +3,9 @@ from nltk.stem import WordNetLemmatizer
 from nltk.stem.snowball import EnglishStemmer 
 from nltk.text import TextCollection
 from nltk.corpus import wordnet as wn
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
 
 #####################################
 ########  DEFINED FUNCTIONS  ########
@@ -13,11 +16,13 @@ def stemming(fileIn, fileOut):
     lines = fileIn.readlines()
     for line in lines:
         words = line.split(" ")
+        toWrite = ""
         for word in words:
-            fileOut.write(stemmer.stem(word) + " ")
+            toWrite = toWrite + stemmer.stem(word) + " "
             # if (stemmer.stem(word) != word):
-            #    print('This is the original word: ' + word + ' and this the stemmed one: ' + stemmer.stem(word)) 
-        fileOut.write("\n")             
+            #    print('This is the original word: ' + word + ' and this the stemmed one: ' + stemmer.stem(word))       
+        # Remove trailing whitespace and write to file
+        fileOut.write(toWrite.rstrip() + "\n")
 
 # TODO: Include tokenization into the lemmatization process --> Better results!
 # Lemmatization of the text according to WordNet's morphy function
@@ -25,14 +30,30 @@ def lemmatize(fileIn, fileOut):
     lines = fileIn.readlines()
     for line in lines:
         words = line.split(" ")
+        toWrite = ""
         for word in words:
-            fileOut.write(wn.lemmatize(word) + " ")
+            toWrite = toWrite + wn.lemmatize(word) + " "
             # if (wn.lemmatize(word) != word):
             #    print('This is the original word: ' + word + ' and this the lemmatized one: ' + wn.lemmatize(word)) 
-        fileOut.write("\n")
+        # Remove trailing whitespace and write to file
+        fileOut.write(toWrite.rstrip() + "\n")
+
+# Remove all words that are part of the stopword list
+def stopwordRemoval(fileIn, fileOut):
+    lines = fileIn.readlines()
+    for line in lines:
+        words = line.split(" ")
+        toWrite = ""
+        for word in words:
+            if (word not in sw):
+                toWrite = toWrite + word + " "
+            # else:
+            #    print("Removed " + word)
+        # Remove trailing whitespace and write to file
+        fileOut.write(toWrite.rstrip() + "\n")
 
 
-# Returns tagges words
+# Returns tagged words (Shall be used to enhance the lemmatization process)
 def tag(fileIn):
     return pos_tag(nltk.word_tokenize(fileIn.read()))
 
@@ -72,16 +93,32 @@ def penn_to_wn(tag):
 # Initialization
 wn = WordNetLemmatizer()
 stemmer = EnglishStemmer()
+sw = stopwords.words('english')
+
+# TODO: Find optimal position for stopword removal
+# Stopword removal for the positive training set
+with open("test-pos.txt", "r") as fileIn:
+    with open("train-pos-wostops.txt", "w") as fileOut:
+        stopwordRemoval(fileIn,fileOut)
+        fileOut.close()
+    fileIn.close()
+
+# Stopword removal for the negative training set
+with open("test-neg.txt", "r") as fileIn:
+    with open("train-neg-wostops.txt", "w") as fileOut:
+        stopwordRemoval(fileIn,fileOut)
+        fileOut.close()
+    fileIn.close()
 
 # Stemming for the positive training set
-with open("train-pos.txt", "r") as fileIn:
+with open("train-pos-wostops.txt", "r") as fileIn:
     with open("train-pos-stemmed.txt", "w") as fileOut:
         stemming(fileIn,fileOut)
         fileOut.close()
     fileIn.close()
 
 # Stemming for the negative training set
-with open("train-neg.txt", "r") as fileIn:
+with open("train-neg-wostops.txt", "r") as fileIn:
     with open("train-neg-stemmed.txt", "w") as fileOut:
         stemming(fileIn,fileOut)
         fileOut.close()
@@ -100,6 +137,38 @@ with open("train-neg-stemmed.txt", "r") as fileIn:
         lemmatize(fileIn,fileOut)
         fileOut.close()
     fileIn.close()
+
+# According to the example provided here: https://roshansanthosh.wordpress.com/2016/02/18/evaluating-term-and-document-similarity-using-latent-semantic-analysis/
+
+# Perform tfidf vectorization --> term frequency * inverse document frequency
+# TODO: Ueberpruefen ob das so richtig ist, dass man nur 2 Dimensionen hat?
+with open ("train-pos-lemmatized.txt", "r") as fileIn:
+    posData = fileIn.read()
+    # print("This is the positive data: " + posData)
+    fileIn.close()
+
+with open ("train-neg-lemmatized.txt", "r") as fileIn:
+    negData = fileIn.read()
+    # print("This is the negative data: " + negData)
+    fileIn.close()
+
+data = [posData, negData]
+print("This is the data: ")
+print(data)
+
+# Funktioniert noch nicht so richtig
+transformer = TfidfVectorizer()
+tfidf = transformer.fit_transform(data)
+print("This is the tfidf data: ")
+print(tfidf.toarray())
+
+# Perform SVD computation 
+svd = TruncatedSVD(n_components = 2, algorithm="arpack")
+lsa = svd.fit_transform(tfidf.T)
+
+# TODO: Testen mit Datensplit
+
+
 
 
 
