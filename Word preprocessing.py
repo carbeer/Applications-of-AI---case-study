@@ -152,7 +152,7 @@ with open ("train-neg-lemmatized.txt", "r") as fileIn:
     # print("This is the negative data: " + negData)
     fileIn.close()
 
-data = [posData, negData]
+data = posData.split("\n")
 print("This is the data: ")
 print(data)
 
@@ -160,11 +160,14 @@ print(data)
 transformer = TfidfVectorizer()
 tfidf = transformer.fit_transform(data)
 print("This is the tfidf data: ")
-print(tfidf.toarray())
+print(tfidf)
 
 # Perform SVD computation 
 svd = TruncatedSVD(n_components = 2, algorithm="arpack")
+print("This is the lsa data: ")
 lsa = svd.fit_transform(tfidf.T)
+
+print(lsa)
 
 # TODO: Testen mit Datensplit
 
