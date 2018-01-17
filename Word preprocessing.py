@@ -5,9 +5,7 @@ from nltk.stem.snowball import EnglishStemmer
 from nltk.text import TextCollection
 from nltk.corpus import wordnet as wn
 from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.decomposition import TruncatedSVD
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
