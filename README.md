@@ -10,9 +10,10 @@ Open the shell in the main directory and execute the script using  ```python '.\
 This is a python script to classify reviews into positive or negative sentiments using the **Bag Of Words model**.
 #### Training
 Firstly, we iteratively processed the raw data from the reviews
-1. Stemming *(EnglishStemmer, nltk snowball package)*
-2. Stopword removal *(nltk corpus package)*
-3. Lemmatization *(WordNetLemmatizer, nltk corpus package)*
+1. Stopword removal *(nltk corpus package)* 
+2. Lemmatization *(WordNetLemmatizer, nltk corpus package)*
+3. Stemming *(EnglishStemmer, nltk snowball package)*
+4. Lemmatization *(WordNetLemmatizer, nltk corpus package)*
 
 After cleaning the data, we created a dictionary of words that occur in the documents and created a document-term matrix *(CountVectorizer, sklearn package)*.
 Finally the model is trained using the multinominal Naive Bayes classifier *(MultinomialNB, sklearn package)*.

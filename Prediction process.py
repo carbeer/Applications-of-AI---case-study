@@ -16,26 +16,6 @@ from sklearn.metrics import confusion_matrix, classification_report
 #####################################
 
 # Calls all the functions that are necessary to clean the data and returns list of reviews
-def cleanData(fileIn):
-	cleanedData = []
-	with open(fileIn, "r") as file:
-		lines = file.readlines()
-		stemmed = stemming(lines)
-		stopwordsRemoved = stopwordRemoval(stemmed)
-		lemmatized = lemmatize(stopwordsRemoved)
-		cleanedData = lemmatized
-	file.close()
-	return cleanedData
-
-def cleanDataFromText(line):
-	cleanedData = []
-	lines = [line]
-	stemmed = stemming(lines)
-	stopwordsRemoved = stopwordRemoval(stemmed)
-	lemmatized = lemmatizeWithTags(stopwordsRemoved)
-	cleanedData = lemmatized
-	return cleanedData
-
 def cleanDataFromTextSplit(line):
 	cleanedData = []
 	lines = [line]
@@ -47,18 +27,6 @@ def cleanDataFromTextSplit(line):
 	return cleanedData[0].split(" ")
 
 # Stemming of all words in fileIn and writing the new text to fileOut
-def stemming(fileIn, fileOut):
-	lines = fileIn.readlines()
-	for line in lines:
-		words = line.split(" ")
-		toWrite = ""
-		for word in words:
-			toWrite = toWrite + stemmer.stem(word) + " "
-			# if (stemmer.stem(word) != word):
-			#	print('This is the original word: ' + word + ' and this the stemmed one: ' + stemmer.stem(word))	   
-		# Remove trailing whitespace and write to file
-		fileOut.write(toWrite.rstrip() + "\n")
-
 def stemming(lines):
 	processedLines = []
 	for line in lines:
@@ -71,19 +39,6 @@ def stemming(lines):
 	return processedLines
 
 # Remove all words that are part of the stopword list
-def stopwordRemoval(fileIn, fileOut):
-	lines = fileIn.readlines()
-	for line in lines:
-		words = line.split(" ")
-		toWrite = ""
-		for word in words:
-			if (word not in sw):
-				toWrite = toWrite + word + " "
-			# else:
-			#	print("Removed " + word)
-		# Remove trailing whitespace and write to file
-		fileOut.write(toWrite.rstrip() + "\n")
-
 def stopwordRemoval(lines):
 	processedLines = []
 	for line in lines:
@@ -96,31 +51,7 @@ def stopwordRemoval(lines):
 		processedLines.append(toWrite.rstrip())
 	return processedLines
 
-# TODO: Include tokenization into the lemmatization process --> Better results!
-# Lemmatization of the text according to WordNet's morphy function
-def lemmatize(fileIn, fileOut):
-	lines = fileIn.readlines()
-	for line in lines:
-		words = line.split(" ")
-		toWrite = ""
-		for word in words:
-			toWrite = toWrite + wn.lemmatize(word) + " "
-			# if (wn.lemmatize(word) != word):
-			#	print('This is the original word: ' + word + ' and this the lemmatized one: ' + wn.lemmatize(word)) 
-		# Remove trailing whitespace and write to file
-		fileOut.write(toWrite.rstrip() + "\n")
-
-def lemmatize(lines):
-	processedLines = []
-	for line in lines:
-		words = line.split(" ")
-		toWrite = ""
-		for word in words:
-			toWrite = toWrite + wn.lemmatize(word) + " "
-		# Remove trailing whitespace
-		processedLines.append(toWrite.rstrip())
-	return processedLines
-
+# Lemmatization of the text according to WordNet's morphy function and the tags provided by nltk
 def lemmatizeWithTags(lines):
 	processedLines = []
 	count = 0
@@ -136,31 +67,10 @@ def lemmatizeWithTags(lines):
 		processedLines.append(toWrite.rstrip())
 	return processedLines
 
-# Creates a CSV file with lables
-def lableDataFromFileToFile(fileInPos, fileInNeg, fileOut):
-	linesPos = fileInPos.readlines()
-	linesNeg = fileInNeg.readlines()
-	csvwriter = csv.writer(fileOut)
-	for line in linesPos:
-		csvwriter.writerow([line, 'positive'])
-	for line in linesNeg:
-		csvwriter.writerow([line, 'negative'])
-
 # Returns data with lables for further processing
 def lableDataFromFile(fileInPos, fileInNeg):
 	linesPos = fileInPos.readlines()
 	linesNeg = fileInNeg.readlines()
-	text = []
-	lable = []
-	for line in linesPos:
-		text.append(line)
-		lable.append('positive')
-	for line in linesNeg:
-		text.append(line)
-		lable.append('negative')
-	return text, lable
-
-def lableData(linesPos, linesNeg):
 	text = []
 	lable = []
 	for line in linesPos:
@@ -180,7 +90,7 @@ def tag(line):
 #######  EXTERNAL FUNCTIONS  #######
 ####################################
 
-# Shall be used to enhance the lemmatization process
+# Is used to enhance the lemmatization process
 # Copied from stackoverflow: https://stackoverflow.com/questions/25534214/nltk-wordnet-lemmatizer-shouldnt-it-lemmatize-all-inflections-of-a-word
 def is_noun(tag):
 	return tag in ['NN', 'NNS', 'NNP', 'NNPS']
@@ -205,9 +115,9 @@ def penn_to_wn(tag):
 		return wnplain.VERB 
 	return wnplain.NOUN
 			
-#####################################
-########	  EXECUTION	  ########
-#####################################
+####################################
+#######	  MAIN FUNCTION	  	 #######
+####################################
 
 # Initialization
 wn = WordNetLemmatizer()
@@ -215,7 +125,7 @@ stemmer = EnglishStemmer()
 nb = MultinomialNB()
 sw = stopwords.words('english')
 
-# Adopted from https://medium.com/tensorist/classifying-yelp-reviews-using-nltk-and-scikit-learn-c58e71e962d9
+# Approach adopted from https://medium.com/tensorist/classifying-yelp-reviews-using-nltk-and-scikit-learn-c58e71e962d9
 text = []
 lable = []
 
@@ -226,8 +136,12 @@ with open("Review files/train-pos.txt", "r") as filePos:
 	fileNeg.close()
 filePos.close()
 
+#####################################
+########	  TRAINING	  	 ########
+#####################################
+
 # Bag of words method is used
-# Creates a dictionary of words that occur in the raw documents
+# Creates a dictionary of words that occur in the raw documents. The 'analyzer' is used to clean the data before the prediction.
 bow_transformer = CountVectorizer(analyzer=cleanDataFromTextSplit).fit(text)
 
 # Creates document-term matrix
@@ -239,10 +153,12 @@ text_train, text_test, lable_train, lable_test = train_test_split(text, lable, t
 # Training
 nb.fit(text_train, lable_train)
 
+#################################
+#######    PREDICTION    ########
+#################################
+
 # Prediction
 preds = nb.predict(text_test)
-# print('These are the predictions:')
-# print(preds)
 
 # Evaluation: Uses the lable_test data to compare the values with the ones predicted by the data model
 print('\n####################################')
@@ -253,17 +169,25 @@ print(confusion_matrix(lable_test, preds))
 print('\nThis is the classification report:')
 print(classification_report(lable_test, preds))
 
+#################################
+#######    APPLICATION    #######
+#################################
 
 # Predict values for the test data
-
 testData = []
+
 # Reads the reviews from the test file
 with open("Review files/test.txt", "r") as testFile:
 	testData = testFile.readlines()
 testFile.close()
 
+# Creates document-term matrix
 testDataTransformed = bow_transformer.transform(testData)
+
+# Prediction
 testPredictions = nb.predict(testDataTransformed)
+
+# Writes predictions into CSV file
 with open("predictions.csv", "wb") as predictions:
 	csvwriter = csv.writer(predictions)
 	for x in range(0, (len(testData)-1)):
@@ -272,13 +196,115 @@ predictions.close()
 
 print('You can find our predictions in the file "predictions.csv"')
 
-####################################
-#######  ITERATIVE CLEANING  #######
-####################################
 
 
+''' 
+##############################################
+#######  OUTDATED: ITERATIVE CLEANING  #######
+##############################################
 
-''' # TODO: Find optimal position for stopword removal
+#####################################
+########  DEFINED FUNCTIONS  ########
+#####################################
+
+def cleanData(fileIn):
+	cleanedData = []
+	with open(fileIn, "r") as file:
+		lines = file.readlines()
+		stemmed = stemming(lines)
+		stopwordsRemoved = stopwordRemoval(stemmed)
+		lemmatized = lemmatize(stopwordsRemoved)
+		cleanedData = lemmatized
+	file.close()
+	return cleanedData
+
+def cleanDataFromText(line):
+	cleanedData = []
+	lines = [line]
+	stemmed = stemming(lines)
+	stopwordsRemoved = stopwordRemoval(stemmed)
+	lemmatized = lemmatizeWithTags(stopwordsRemoved)
+	cleanedData = lemmatized
+	return cleanedData
+	
+def stemming(fileIn, fileOut):
+	lines = fileIn.readlines()
+	for line in lines:
+		words = line.split(" ")
+		toWrite = ""
+		for word in words:
+			toWrite = toWrite + stemmer.stem(word) + " "
+			# if (stemmer.stem(word) != word):
+			#	print('This is the original word: ' + word + ' and this the stemmed one: ' + stemmer.stem(word))	   
+		# Remove trailing whitespace and write to file
+		fileOut.write(toWrite.rstrip() + "\n")
+
+def stopwordRemoval(fileIn, fileOut):
+	lines = fileIn.readlines()
+	for line in lines:
+		words = line.split(" ")
+		toWrite = ""
+		for word in words:
+			if (word not in sw):
+				toWrite = toWrite + word + " "
+			# else:
+			#	print("Removed " + word)
+		# Remove trailing whitespace and write to file
+		fileOut.write(toWrite.rstrip() + "\n")
+
+
+def lemmatize(fileIn, fileOut):
+	lines = fileIn.readlines()
+	for line in lines:
+		words = line.split(" ")
+		toWrite = ""
+		for word in words:
+			toWrite = toWrite + wn.lemmatize(word) + " "
+			# if (wn.lemmatize(word) != word):
+			#	print('This is the original word: ' + word + ' and this the lemmatized one: ' + wn.lemmatize(word)) 
+		# Remove trailing whitespace and write to file
+		fileOut.write(toWrite.rstrip() + "\n")
+
+def lemmatize(lines):
+	processedLines = []
+	for line in lines:
+		words = line.split(" ")
+		toWrite = ""
+		for word in words:
+			toWrite = toWrite + wn.lemmatize(word) + " "
+		# Remove trailing whitespace
+		processedLines.append(toWrite.rstrip())
+	return processedLines
+
+
+# Creates a CSV file with lables
+def lableDataFromFileToFile(fileInPos, fileInNeg, fileOut):
+	linesPos = fileInPos.readlines()
+	linesNeg = fileInNeg.readlines()
+	csvwriter = csv.writer(fileOut)
+	for line in linesPos:
+		csvwriter.writerow([line, 'positive'])
+	for line in linesNeg:
+		csvwriter.writerow([line, 'negative'])
+
+# Creates an array of (both pos and neg) reviews and a corresponding array of lables
+def lableData(linesPos, linesNeg):
+	text = []
+	lable = []
+	for line in linesPos:
+		text.append(line)
+		lable.append('positive')
+	for line in linesNeg:
+		text.append(line)
+		lable.append('negative')
+	return text, lable
+
+#####################################
+########	  EXECUTION	  	 ########
+#####################################
+
+
+# TODO: Find optimal position for stopword removal
 # Stopword removal for the positive training set
 with open("Review files/train-pos.txt", "r") as fileIn:
 	with open("Review files/train-pos-wostops.txt", "w") as fileOut:
