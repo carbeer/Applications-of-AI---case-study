@@ -4,6 +4,7 @@ from nltk.stem import WordNetLemmatizer
 from nltk.stem.snowball import EnglishStemmer 
 from nltk.text import TextCollection
 from nltk.corpus import wordnet as wn
+from nltk.corpus import wordnet as wnplain
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
@@ -31,16 +32,17 @@ def cleanDataFromText(line):
 	lines = [line]
 	stemmed = stemming(lines)
 	stopwordsRemoved = stopwordRemoval(stemmed)
-	lemmatized = lemmatize(stopwordsRemoved)
+	lemmatized = lemmatizeWithTags(stopwordsRemoved)
 	cleanedData = lemmatized
 	return cleanedData
 
 def cleanDataFromTextSplit(line):
 	cleanedData = []
 	lines = [line]
-	stemmed = stemming(lines)
-	stopwordsRemoved = stopwordRemoval(stemmed)
-	lemmatized = lemmatize(stopwordsRemoved)
+	stopwordsRemoved = stopwordRemoval(lines)
+	lemmatized = lemmatizeWithTags(stopwordsRemoved)
+	stemmed = stemming(lemmatized)
+	lemmatized = lemmatizeWithTags(stemmed)
 	cleanedData = lemmatized
 	return cleanedData[0].split(" ")
 
@@ -119,6 +121,21 @@ def lemmatize(lines):
 		processedLines.append(toWrite.rstrip())
 	return processedLines
 
+def lemmatizeWithTags(lines):
+	processedLines = []
+	count = 0
+	for line in lines:
+		words = tag(line)
+		toWrite = ""
+		for word in words:
+			toWrite = toWrite + wn.lemmatize(word[0], penn_to_wn(word[1])) + " "
+			# print('This is the original word: ' + word[0])
+			# print('This is the category: ' + word[1])
+			# print('And this is the lemmatized word: ' + wn.lemmatize(word[0], penn_to_wn(word[1])))
+		# Remove trailing whitespace
+		processedLines.append(toWrite.rstrip())
+	return processedLines
+
 # Creates a CSV file with lables
 def lableDataFromFileToFile(fileInPos, fileInNeg, fileOut):
 	linesPos = fileInPos.readlines()
@@ -155,8 +172,9 @@ def lableData(linesPos, linesNeg):
 	return text, lable
 
 # Returns tagged words (Shall be used to enhance the lemmatization process)
-def tag(fileIn):
-	return pos_tag(nltk.word_tokenize(fileIn.read()))
+def tag(line):
+	return nltk.pos_tag(nltk.word_tokenize(line))
+
 
 ####################################
 #######  EXTERNAL FUNCTIONS  #######
@@ -178,14 +196,14 @@ def is_adjective(tag):
 
 def penn_to_wn(tag):
 	if is_adjective(tag):
-		return wn.ADJ
+		return wnplain.ADJ
 	elif is_noun(tag):
-		return wn.NOUN
+		return wnplain.NOUN
 	elif is_adverb(tag):
-		return wn.ADV
+		return wnplain.ADV
 	elif is_verb(tag):
-		return wn.VERB
-	return None
+		return wnplain.VERB 
+	return wnplain.NOUN
 			
 #####################################
 ########	  EXECUTION	  ########
